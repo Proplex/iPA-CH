@@ -31,7 +31,7 @@ proc(_mail_dispatch, @args,
                     die(concat(color(red), 'Oops, there was an error! Try again later?'))
                 )
             , # else
-                die(concat(color(yellow), 'Usage: /mail send ', color(red), '<player> <message>'))
+                die(concat(color(green), 'Usage: /mail send ', color(red), '<player> <message>'))
             ),
             
         'set',
@@ -71,7 +71,7 @@ proc(_mail_dispatch, @args,
                     )
                 )
             , # else
-                die('Usage: /mail set [global] <option> <value>')
+                die(concat(color(green), 'Usage: /mail set ' , color(red), '[global] <option> <value>'))
             ),
             
         'senditem',
@@ -176,19 +176,19 @@ proc(_mail_dispatch, @args,
         msg('The following commands are available:')
         msg('- ', color(green), '/mail', color(white), ': show this message')
         if(has_permission('chmail.send'),
-            msg('- ', color(green), '/mail send <player> <message>', color(white), ': send <message> to player.')
+            msg('- ', color(green), '/mail send ', color(red), '<player> <message>', color(white), ': send <message> to player.')
         )
         # A little long for the in-game console. Possibly move the long explanation to the actual trigger, when incorrectly put?
         if(has_permission('chmail.send.item'),
-            msg('- ', color(green), '/mail senditem <player> <item> [count]', color(white), ': send [count] (default 1) of <item> to <player> if you have it in your inventory. <item> can also be "hand" for the item in your hand.')
+            msg('- ', color(green), '/mail senditem ', color(red), ' <player> <item> [count]', color(white), ': send ', color(red), '[count] ', color(white), '(default 1) of ', color(red), '<item> ', color(white), ' to ', color(red), '<player> ', color(white), 'if you have it in your inventory.  ', color(red), '<item> ', color(white), 'can also be "hand" for the item in your hand.')
         )
-        msg('- ', color(green), '/mail read <id[,id][,id-id]>', color(white), ': read messages by id.')
-        msg('- ', color(green), '/mail inbox [page]', color(white), ': read mail index.')
+        msg('- ', color(green), '/mail read ', color(red), '<id>', color(white), ': read messages by ', color(red), ' <id>', color(white), '.')
+        msg('- ', color(green), '/mail inbox ', color(red), '[page]', color(white), ': read mail index.')
         if(has_permission('chmail.receive.item'),
-            msg('- ', color(green), '/mail accept <id>', color(white), ': accept an item a player sent you.')
+            msg('- ', color(green), '/mail accept ', color(red), ' <id>', color(white), ': accept an item a player sent you.')
         )
         msg('- ', color(green), '/mail clear', color(white), ': clear all messages.')
-        msg('- ', color(green), '/mail set [global] <option> <value>', color(white), ': set an option.')
-        die(concat('- ', color(green), '/mail delete <id>', color(white), ': delete message <id>.'))
+        msg('- ', color(green), '/mail set ', color(red), ' [global] <option> <value>', color(white), ': set an option.')
+        die(concat('- ', color(green), '/mail delete ', color(red), ' <id>', color(white), ': delete message ', color(red), ' <id>', color(white), '.'))
     )
 )
