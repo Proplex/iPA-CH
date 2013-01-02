@@ -3,9 +3,9 @@ bind(player_join, null, null, @event,
         assign(@mail, _player_mail(@event[player]))
         
         if(is_null(@mail) || length(@mail) == 0,
-            die()
+            die(tmsg(@event[player], concat(color(yellow), 'You have', color(red), ' no', color(yellow), ' new mail.')))
         , # else
-            tmsg(@event[player], concat(color(green), 'You have mail! Type `/mail inbox` to see'))
+            tmsg(@event[player], concat(color(yellow), 'You have mail! Type', color(red), ' `/mail inbox`', color(yellow), ' to see.'))
         )
     ))
 )
