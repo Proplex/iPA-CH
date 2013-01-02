@@ -4,31 +4,32 @@
 #
 #=========================================================================#
 
-#/tpa $ = /call $
 
+# A lot of new players on the server are used to /tpa, so redirect /tpa to our own version, /call.
 /tpa $ = /call $
 
-
-
-
-/homesite1 = /warp homesite 1
-/homesite2 = /warp homesite 2
-/homesite3 = /warp homesite 3
-
-
-/warp homesite1 = /warp homesite 1
-/warp homesite2 = /warp homesite 2
-/warp homesite3 = /warp homesite 3
-
+# Still learning CommandHelper, so just make a new alias for when /tpa is left blank. Spits out information.
 /tpa = >>>
 msg(concat(color(RED),'Too few arguments.'))
 msg(concat(color(RED),'/tpa <target>'))
 <<<
 
+# Simplify the homesite commands.
+/homesite1 = /warp homesite 1
+/homesite2 = /warp homesite 2
+/homesite3 = /warp homesite 3
+
+# Common typos on warping to the homesites
+/warp homesite1 = /warp homesite 1
+/warp homesite2 = /warp homesite 2
+/warp homesite3 = /warp homesite 3
+
+
+# Teehee.
 /integrity = broadcast(concat(color(RED),'INTEGRITY!'))
 
 
-
+# Work in progress. Use /survival to get to the survival world rather than the unrealiable Leaus.
 /survival = >>>
 if(not(equals(pworld(), 'server')), die(concat(color(RED),'You need to be in the normal world to use this command!'))) \
 /ungod \
@@ -57,20 +58,22 @@ die(concat(color(RED),'Welcome to Survival!')) \
 
 
 
-
+# Run as command to assume player and run a command as if it were they.
 runas:/runas $player $cmd [$] = >>>
     runas($player,
         sconcat($cmd $)
     )
 <<<
 
-### Chat Masquerading
+# Chat Masquerading
 chatas:/chatas $player $chat [$] = >>>
     chatas($player,
         sconcat($chat $)
     )
 <<<
 
+
+# Getting real tired of people asking for OP or GM 1, so have some prank commands.
 /opme = >>>
 msg(concat(color(e),'You are now OP!'))
 <<<
@@ -79,16 +82,22 @@ msg(concat(color(e),'You are now OP!'))
 msg(concat(color(e),'You are now in CREATIVE mode!'))
 <<<
 
+
+# Lazy commands
 /day = /time day
 /sunny = /weather clear
 /night = /time night
 
+
+# Set hats!
 hat:/hat = >>>
 assign(@player, player())
 if(is_null(pinv(@player, null)), die(concat(color(RED),'You must be holding an item.')))
 try(set_pinv(array(103: pinv(player(), null))), @i, die('You cannot wear that!'))
 msg(concat(color(e),'Enjoy your hat!'))
 <<<
+
+
 
 
 ######################################################
