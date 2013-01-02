@@ -1,6 +1,6 @@
 #=========================================================================#
 #
-# Command Helper sample config file
+# iPwnAge: The Minecraft Server CommandHelper config.txt
 #
 #=========================================================================#
 
@@ -26,21 +26,21 @@ msg(concat(color(RED),'/tpa <target>'))
 
 
 # Teehee.
-/integrity = broadcast(concat(color(RED),'INTEGRITY!'))
+integrity:/integrity = broadcast(concat(color(RED),'INTEGRITY!'))
 
 
-# Work in progress. Use /survival to get to the survival world rather than the unrealiable Leaus.
+# Use /survival to get to the survival world. 
 /survival = >>>
-if(not(equals(pworld(), 'server')), die(concat(color(RED),'You need to be in the normal world to use this command!'))) \
-/ungod \
-/stopfly \
-/vanishoff \
-sudo('/warp survival') \
-die(concat(color(RED),'Welcome to Survival!')) \
+if(not(equals(pworld(), 'server')), die(concat(color(RED),'You need to be in the normal world to use this command!')))
+sudo('/ungod')
+sudo('/stopfly')
+sudo('/vanish off')
+sudo('/warp survival')
+die(concat(color(RED),'Welcome to Survival!'))
 <<<
 
 
-*:/myregions = >>>
+regions:/myregions = >>>
     assign(@pname,pinfo()[0])
     assign(@regions,sk_all_regions(pworld()))
     assign(@uregions, array())
