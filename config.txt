@@ -1,0 +1,572 @@
+#=========================================================================#
+#
+# Command Helper sample config file
+#
+#=========================================================================#
+
+#/tpa $ = /call $
+
+/tpa $ = /call $
+
+
+
+
+/homesite1 = /warp homesite 1
+/homesite2 = /warp homesite 2
+/homesite3 = /warp homesite 3
+
+
+/warp homesite1 = /warp homesite 1
+/warp homesite2 = /warp homesite 2
+/warp homesite3 = /warp homesite 3
+
+/tpa = >>>
+msg(concat(color(RED),'Too few arguments.'))
+msg(concat(color(RED),'/tpa <target>'))
+<<<
+
+/integrity = broadcast(concat(color(RED),'INTEGRITY!'))
+
+
+
+/survival = >>>
+if(not(equals(pworld(), 'server')), die(concat(color(RED),'You need to be in the normal world to use this command!'))) \
+/ungod \
+/stopfly \
+/vanishoff \
+sudo('/warp survival') \
+die(concat(color(RED),'Welcome to Survival!')) \
+<<<
+
+
+*:/myregions = >>>
+    assign(@pname,pinfo()[0])
+    assign(@regions,sk_all_regions(pworld()))
+    assign(@uregions, array())
+    foreach(@regions,@region,
+       assign(@rowners,sk_region_info(@region, pworld()))
+       if(array_contains_ic(@rowners[1],@pname),
+          array_push(@uregions,@region)
+       )
+    )
+    if(array_size(@uregions) == 0,
+      msg(You have no regions),
+      msg('Your regions are:' array_implode(@uregions))
+    )
+<<<
+
+
+
+
+runas:/runas $player $cmd [$] = >>>
+    runas($player,
+        sconcat($cmd $)
+    )
+<<<
+
+### Chat Masquerading
+chatas:/chatas $player $chat [$] = >>>
+    chatas($player,
+        sconcat($chat $)
+    )
+<<<
+
+/opme = >>>
+msg(concat(color(e),'You are now OP!'))
+<<<
+
+/gm1 = >>>
+msg(concat(color(e),'You are now in CREATIVE mode!'))
+<<<
+
+/day = /time day
+/sunny = /weather clear
+/night = /time night
+
+hat:/hat = >>>
+assign(@player, player())
+if(is_null(pinv(@player, null)), die(concat(color(RED),'You must be holding an item.')))
+try(set_pinv(array(103: pinv(player(), null))), @i, die('You cannot wear that!'))
+msg(concat(color(e),'Enjoy your hat!'))
+<<<
+
+
+######################################################
+#
+#   DLoad: Fill chests or dispensers in one click!
+#   version 0.9
+#
+######################################################
+
+
+
+dload:/dload [$option1] [$option2] [$option3] = >>>
+### What is the name of this script?
+assign(@name, DLoad)
+
+### What is the default item to use? (Note: this value uses a ID, not a name. Default: arrows)
+assign(@defaultitem, 262)
+
+### What is the default item quantity to use? (Note: this value uses a number. Default: full stack (64))
+assign(@defaultitemqty, 64)
+
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@action, $option1)
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@option3, $option3)
+assign(@player, player())
+assign(@dev, get_value(@player.'.script.developer'))
+
+
+### Action list help
+proc(_dload_help,
+	msg(color(3).'DLoad: Fill chests or dispensers in one click!')
+	msg(color(6).'- Help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(6).'- Information:')
+	msg(color(7).'/dload help'.color(4).' - '.color(f).'Shows this help screen.')
+	msg(color(7).'/dload info'.color(4).' - '.color(f).'Shows your settings, such as the currently set item, or extra messages.')
+	msg(color(7).'/dload verbose <yes/no>'.color(4).' - '.color(f).'Allows you to turn on or off extra messages DLoad can display.')
+	msg(color(6).'- Actions:')
+	msg(color(7).'Most commands support specifying the item type and quantity to use, or you can use "/dload set" to always use a specific item without having to type it each time.')
+	msg(color(7).'/dload [item] [qty]'.color(4).' - '.color(f).'Binds the tool you are holding to fill any chest, dispenser, or furnace block with the specified item (defaults to arrows).')
+	msg(color(7).'/dload set <item> [qty]'.color(4).' - '.color(f).'Allows you to set what item type and quantity you would like to automatically use when you just type \'/dload\'. Use "default" as your item type to reset to defaults.')
+	msg(color(7).'/dload area [item] [qty]'.color(4).' - '.color(f).'This uses your WorldEdit selection to fill every fillable block in the selection with the specified item (defaults to arrows). Useful for walls of death.')
+	msg(color(7).'/dload fuel [item] [qty]'.color(4).' - '.color(f).'This binds your tool to fill the fuel portion of a furnace, instead of filling the block to burn.')
+	msg(color(7).'/dload mode <itemtype>'.color(4).' - '.color(f).'Sets /dload area to only fill a chest, dispenser, or furnace, or all 3 types. Useful for not wiping chest contents ;)')
+)
+
+
+
+### Argument error checks
+# List of supported actions
+# If a action is not listed, then the tool will activate.
+assign(@actionl[0], help)
+assign(@actionl[1], area)
+assign(@actionl[2], fuel)
+assign(@actionl[3], verbose)
+assign(@actionl[4], set)
+assign(@actionl[5], info)
+assign(@actionl[6], mode)
+
+
+# Conflict: The item type is expected on $option1, but the item type and actions come on
+# that same variable, even though the user will enter "/dload item" and "/dload ACTION item" respectively.
+# This tells the script the item type if a action is performed.
+if(array_contains(@actionl, @action), 
+	assign(@option1, @option2)
+	assign(@option2, @option3)
+)
+
+
+#Values: previously set item type and quantity
+assign(@setitem, get_value(@you.'.'.@name.'.set.item.type'))
+if(@setitem != '' || @setitem != null,
+	#Check: Script expects item type to be a number. If it somehow isn't, convert it to a number.
+	if(is_integral(@setitem), null,
+		assign(@setitem, data_values(@setitem))
+		store_value(@you.'.'.@name.'.set.item.type', @setitem)
+		if(@dev == 'yes', msg(color(7).'[DEV] Auto-fix: '.color(f).'Set item type was not a number.'))
+	)
+	assign(@setitemname, data_name(@setitem))
+)
+assign(@setitemqty, get_value(@you.'.'.@name.'.set.item.qty'))
+
+
+
+### These actions don't need the whole script to run.
+
+if(@action == 'help',
+	_dload_help()
+	die()
+)
+
+# Extra messages
+if(@action == 'verbose',
+	assign(@value, @option1)
+	assign(@entry[0], 'yes')
+	assign(@entry[1], 'no')
+	assign(@newsetting, to_lower(@value))
+	if(array_contains_ic(@entry, @newsetting),
+		store_value(@you.'.'.@name.'.verbose', @newsetting)
+		if(equals_ic(@newsetting, @entry[0]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are enabled! '.color(7).@name.' will display more messages than normal now.')
+		)
+		if(equals_ic(@newsetting, @entry[1]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are now disabled! '.color(7).@name.' will NOT display lots of messages now.')
+		)
+		die(@successmsg),	
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'Invalid setting specified. Type either yes or no.')
+	)
+)
+
+
+
+#set which item type to fill on /dload area
+if(@action == 'mode',
+	#nothing...
+	if(@option1 == '' || @option1 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a type of item to fill. Accepted item types are chests, dispensers, and furnaces, or use "all" to use all 3 types.')
+	)
+	assign(@value, to_upper(@option1))
+	if(@value == 'ALL',
+		store_value(@you.'.'.@name.'.area.mode', 'All')
+		assign(@msg, 'All')
+	)
+	if(@value == 'CHEST',
+		store_value(@you.'.'.@name.'.area.mode', 'Chest')
+		assign(@msg, 'Chest')
+	)
+	if(@value == 'DISPENSER',
+		store_value(@you.'.'.@name.'.area.mode', 'Dispenser')
+		assign(@msg, 'Dispenser')
+	)
+	if(@value == 'FURNACE',
+		store_value(@you.'.'.@name.'.area.mode', 'Furnace')
+		assign(@msg, 'Furnace')
+	)
+	#Done messages
+	if(@msg == '' || @msg == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a VALID type of item to fill. Accepted item types are chests, dispensers, and furnaces, or use "all" to use all 3 types.')
+	)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '.@msg)
+	die()
+)
+
+
+
+#information.
+if(@action == 'info',
+	assign(@verbose, get_value(@you.'.'.@name.'.verbose'))
+	assign(@lastitemused, get_value(@you.'.'.@name.'.last.useditem'))
+	assign(@lastitemname, data_name(@lastitemused))
+	assign(@areamode, get_value(@player.'.'.@name.'.area.mode'))
+	if(@areamode == '' || @areamode == null,
+		assign(@areamode, All)
+	)
+	if(@setitem == '' || @setitem == null,
+		assign(@setitemname, color(7).'Unset')
+	,
+		assign(@setitemmsg,'(Quantity: '.@setitemqty.')')
+	)	
+	if(@verbose == 'yes',
+		assign(@vmsg, color(a).'Enabled')
+		,
+		assign(@vmsg, color(c).'Disabled')
+	)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' settings information for: '.color(a).@you)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color(a).@setitemname.' '.@setitemmsg)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemname)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7).@areamode)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
+	die()
+)
+
+
+
+### Continuing on...
+
+# Set defaults:
+# No set item? We'll load the variable with the default item then.
+if(@setitem == '' || @setitem == null, assign(@setitem, @defaultitem))
+# No set item quantity? We'll load the variable with the default qty then.
+if(@setitemqty == '' || @setitemqty == null, assign(@setitemqty, @defaultitemqty))
+
+# Override set settings:
+# Are you specifying the item type?
+assign(@item, @option1)
+if(@item == '' || @item == null,
+	assign(@item, @setitem)
+)
+# Are you specifying the quantity?
+assign(@itemqty, @option2)
+if(@itemqty == '' || @itemqty == null,
+	assign(@itemqty, @setitemqty)
+)
+if(is_integral(@itemqty), null,
+	die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify your quantity in a number.')
+)
+
+#Did you say default?
+if(@option1 == 'default',
+	assign(@item, @defaultitem)
+	assign(@itemqty, @defaultitemqty)
+)
+
+# Check: Did you specify a item name or ID?
+if(is_integral(@item),
+	if(@dev == 'yes', msg(color(7).'[DEV] is_integral: '.color(f).'yes'))
+	assign(@itemname, data_name(@item))
+	,
+	if(@dev == 'yes', msg(color(7).'[DEV] is_integral: '.color(f).'no'))
+	assign(@realid, data_values(@item))
+	assign(@itemname, data_name(@realid))
+	assign(@item, @realid)
+)
+
+#Check: is this air?
+if(@item == '0',
+	die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot use air!')
+)
+
+# Check: Null.
+# WARNING: If data_name comes up with null, DIE!! As this indicates a unsupported, non-vanilla item, 
+# and in setting items CH doesn't care if the item actually exists, it will just set the container full
+# of what it was told to set it to.
+# If a client tries to view this non-existent item: Instant client crash.
+if(@itemname == null || @itemname == '',
+	msg(color(c).'['.color(6).@name.color(c).'] '.color(7).'That item isn\'t supported!')
+	_msgAdmins(color(c).'['.color(6).@name.color(c).'] '.color(c).@player.' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', color(c).'['.color(6).@name.color(c).'] '.color(c).@player.' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported! Note: If you are running a modded server, you will need to notify CommandHelper of the data names for blocks/items that mods add. Ask on CH IRC for help in doing this.')
+	die()
+)
+
+#Check: Item permissions
+if(@defaultitem != @item,
+	if(@dev == 'yes',
+		msg(color(7).'[DEV] Not default item: '.color(f).@defaultitem.' != '.@item)
+	)
+	if(has_permission(@player, 'commandhelper.alias.dload.use.'.@item), if(@dev == 'yes', msg(color(7).'[DEV] '.color(f).'Using item perm')),
+		if(has_permission(@player, 'commandhelper.alias.dload.use.any'), if(@dev == 'yes', msg(color(7).'[DEV] '.color(f).'Using any perm')),
+			die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You do not have permissions to use this item type. ('.@itemname.')')
+		)
+	)
+)
+
+
+### More actions
+
+#set item type to automatically use on /dload
+if(@action == 'set',
+	if(@option1 == 'default',
+		assign(@item, @defaultitem)
+		assign(@itemqty, @defaultitemqty)
+	)
+	store_value(@you.'.'.@name.'.set.item.type', @item)
+	store_value(@you.'.'.@name.'.set.item.qty', @itemqty)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item was: '.color(7).@setitemname.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color(a).data_name(@item).' (Quantity: '.@itemqty.')')
+	die()
+)
+
+
+
+#Item last used:
+store_value(@you.'.'.@name.'.last.useditem', @item)
+
+### Fill furnace fuel, not the top of it.
+if(@action == 'fuel',
+	store_value(@player.'.'.@name.'.set.fuel', 'yes')
+)
+
+
+### Fill a area
+if(@action == 'area',
+	if(has_permission(@you, 'commandhelper.alias.dload.area'),
+		assign(@world, pworld(@you))
+		assign(@pos1, sk_pos1())
+		assign(@pos2, sk_pos2())
+	#Check: if 0,0,0, assume no selection
+		assign(@nullarray, array(0,0,0,@world))
+		if(@pos1 == @nullarray || @pos2 == @nullarray,
+			die(color(c).'['.color(6).@name.color(c).'] '.color(7).'What area? You need to make a selection with WorldEdit first!')
+		)
+	#Check: Area mode
+		assign(@areamode, get_value(@you.'.'.@name.'.area.mode'))
+		if(@areamode == '' || @areamode == null,
+			assign(@areamode, ALL)
+		)	
+
+	# Assigned to get amount of blocks filled
+		assign(@filled, _dload_iterate_cuboid(@pos1, @pos2, _dload_fill, @world, @item, @player, @itemqty))
+		if(@filled > 1,
+			assign(@donemsg, 'Success! '.@filled.' blocks were filled with '.@itemname.'.')
+		,
+			assign(@donemsg, 'Success! 1 block was filled with '.@itemname.'.')
+			if(@filled == 0, assign(@donemsg, 'There wasn\'t anything to fill!'))
+		)
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@donemsg)
+	,
+		msg(color(c).'['.color(6).@name.color(c).'] '.color(7).'You do not have permission to fill an area!')
+	)
+	die()
+)
+
+
+
+### DLoad tool
+	assign(@isenabled, get_value(@player.'.'.@name.'.tool.enable'))
+	if(@isenabled == 'yes',
+		#disable
+		store_value(@player.'.'.@name.'.tool.enable', no)
+		store_value(@player.'.'.@name.'.set.fuel', no)
+		msg(color(7).'['.color(gold).@name.color(7).'] '.color(3).'DLoad tool unbound from your current item.')
+		,
+		#enable
+		assign(@index, null)
+		if(@dev == 'yes',
+			msg(color(7).'[DEV] Tool to bind: '.color(f).pinv(@player, @index)[type])
+		)
+		try(
+			assign(@tool, pinv(@player, @index)[type])
+		,@fail,
+			die(color(c).'['.color(6).@name.color(c).'] '.color(7).'Your hands aren\'t that magical! Equip a tool and use \'/dload\' again.')
+		)
+		assign(@tooltype, data_name(@tool))
+
+
+		store_value(@player.'.'.@name.'.tool.usetool', @tool)
+		store_value(@player.'.'.@name.'.tool.item', @item)
+		store_value(@player.'.'.@name.'.tool.qty', @itemqty)
+	#done
+		store_value(@player.'.'.@name.'.tool.enable', yes)
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'DLoad tool bound to '.@tooltype.'. Left-click a Chest or Dispenser to fill it with '.@itemname.'.')
+
+)
+<<<
+
+
+main.ms:
+
+bind(player_interact, array(id: 'DLoad.tool'), null, @dload,
+	assign(@name, DLoad)
+	assign(@player, player())
+	assign(@verbose, get_value(@player.'.'.@name.'.verbose'))
+	assign(@dev, get_value(@player.'.script.developer'))
+
+
+	assign(@isenabled, get_value(@player.'.'.@name.'.tool.enable'))
+	if(@isenabled == 'yes' && @dload[action] == 'left_click_block' && has_permission(@player, 'commandhelper.alias.dload'),	
+		assign(@usetool, get_value(@player.'.'.@name.'.tool.usetool'))
+		#Check: Make sure that you are using the tool you binded to. Using reg_count to accomodate for tool data values (eg damage value)
+		if(reg_count('('.@usetool.')(:[0-9]*)?', @dload[item]) > 0,
+			assign(@item, get_value(@player.'.'.@name.'.tool.item'))
+			assign(@qty, get_value(@player.'.'.@name.'.tool.qty'))
+			#item permissions check
+			#assigning for return value	
+			assign(@return, _dload_fill(@dload[location][0], @dload[location][1], @dload[location][2], @dload[location][3], @item, @player, @qty))
+			if(@verbose == 'yes',
+				msg(@return)
+			)
+		,
+			if(@verbose == 'yes',
+				assign(@item, get_value(@player.'.'.@name.'.tool.item'))
+				msg(color(c).'['.color(6).@name.color(c).'] '.color(7).'This isn\'t your binded item!')
+			)
+		)
+	)
+)
+
+
+auto_includes.ms:
+
+#Copied from default proc in auto_includes.ms, and edited to add DLoad script-specific features.
+proc(_dload_iterate_cuboid, @b1, @b2, @proc_name, @world, @item, @player, @qty,
+	assign(@name, DLoad)
+
+	#Start counting how many blocks were filled
+	assign(@n, 0)
+	#get player's area mode
+	assign(@areamode, get_value(@player.'.'.@name.'.area.mode'))
+	if(@areamode == '' || @areamode == null,
+		assign(@areamode, All)
+	)
+	assign(@areamode, to_upper(@areamode))
+	assign(@acceptfilltypes, array(CHEST, DISPENSER, FURNACE))	
+
+        for(assign(@x, min(@b1[0], @b2[0])), @x <= max(@b1[0], @b2[0]), @x++,
+                for(assign(@y, min(@b1[1], @b2[1])), @y <= max(@b1[1], @b2[1]), @y++,
+                        for(assign(@z, min(@b1[2], @b2[2])), @z <= max(@b1[2], @b2[2]), @z++,
+				assign(@xyz[0], @x)
+				assign(@xyz[1], @y)
+				assign(@xyz[2], @z)
+				assign(@xyz[3], @world)	
+				#This stops the script if this block isn't capable of having a inventory.
+				try(
+					get_inventory_type(@xyz)
+				,@fail,
+					continue()
+				)
+				#Check: limit what you can fill
+				if(array_contains(@acceptfilltypes, @filltype), null, continue())
+				#Area mode: Continue if the block type doesn't match the set mode. 
+				if(@areamode != 'ALL',
+					if(@areamode != get_inventory_type(@xyz), continue())
+				)
+				inc(@n)
+				call_proc(@proc_name, @x, @y, @z, @world, @item, @player, @qty)
+                        )
+                )
+        )
+	return(@n)
+)
+
+
+
+proc(_dload_fill, @x, @y, @z, @world, @item, @player, @qty,
+	assign(@name, DLoad)
+
+
+	assign(@donemsg, color(7).'['.color(6).@name.color(7).'] '.color(3).'Success!')
+#values
+	assign(@fuel, get_value(@player.'.'.@name.'.set.fuel'))
+	assign(@verbose, get_value(@player.'.'.@name.'.verbose'))
+	assign(@dev, get_value(@player.'.script.developer'))
+
+#need a real array
+	assign(@xyz[0], @x)
+	assign(@xyz[1], @y)
+	assign(@xyz[2], @z)
+	assign(@xyz[3], @world)
+	if(@dev == 'yes',
+		tmsg(@player, color(7).'[DEV] _dload_fill: '.color(f).'Evaluating block: '.@xyz)
+	)
+#Get the inventory size
+	try(
+		assign(@size, get_inventory_size(@xyz))
+	,@fail,
+		return(color(c).'['.color(6).@name.color(c).'] '.color(7).@fail[1])
+		die()
+	)
+	assign(@filltype, get_inventory_type(@xyz))
+	if(@verbose == 'yes',
+		msg(color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable item was found at: '.@xyz)
+	)
+
+#Check: limit what you can fill
+	assign(@acceptfilltypes, array(CHEST, DISPENSER, FURNACE))
+	if(array_contains(@acceptfilltypes, @filltype), null, return(color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot fill this item type!') die())
+
+#Get specified item quantity
+	if(@qty == '' || @qty == null,
+		assign(@qty, get_value(@player.'.'.@name.'.set.item.qty'))
+	)
+	if(@qty == '' || @qty == null,
+		assign(@qty, 64)
+	)	
+#Set array of item
+	assign(@item, array(type: @item, qty: @qty))
+	if(@item[type] == null,
+		return(color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot use air!')
+	)
+#Item type specifics
+	if(@fuel == 'yes' && @filltype == 'FURNACE',
+		#this sets the fuel in the bottom of the furnace.
+		set_inventory_item(@xyz, 1, @item)
+		return(@donemsg)
+		die()
+	)
+	if(@filltype == 'FURNACE',
+		#this sets the top of the furnace.
+		set_inventory_item(@xyz, 0, @item)
+		return(@donemsg)
+		die()
+	)
+#Set em
+	for(assign(@i, 0), @i < @size, @i++,
+		set_inventory_item(@xyz, @i, @item)
+	)
+	return(@donemsg)
+)
