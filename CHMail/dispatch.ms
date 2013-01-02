@@ -31,7 +31,7 @@ proc(_mail_dispatch, @args,
                     die(concat(color(red), 'Oops, there was an error! Try again later?'))
                 )
             , # else
-                die(concat(color(yellow), 'Usage: /mail send ', color(red), '<player> <message>')
+                die(concat(color(yellow), 'Usage: /mail send ', color(red), '<player> <message>'))
             ),
             
         'set',
@@ -123,7 +123,7 @@ proc(_mail_dispatch, @args,
             
             # Display brief index, max 20 chars per mail.
             if(_read_index(player(), @page),
-                die(concat(color(yellow), '/mail to see available options. /mail inbox <page> for more pages.'))
+                die(concat(color(yellow), '/mail to see available options. ', color(red) '/mail inbox ', color(green), '<page> ', color(yellow), 'for more pages.'))
             ),
             
         'read',
