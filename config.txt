@@ -36,9 +36,29 @@ sudo('/ungod')
 sudo('/stopfly')
 sudo('/vanish off')
 sudo('/warp survival')
+sudo('/u')
 die(concat(color(RED),'Welcome to Survival!'))
 <<<
 
+
+# Which home to use depending on location.
+*:/home = >>>
+if(equals(pworld(), 'server'), sudo('/myhome'))
+if(equals(pworld(), 'server_nether'), sudo('/myhome'))
+if(equals(pworld(), 'server_the_end'), sudo('/myhome'))
+if(equals(pworld(), 'survival'), sudo('/commandbook:home'))
+if(equals(pworld(), 'survival_nether'), sudo('/commandbook:home'))
+if(equals(pworld(), 'survival_the_end'), sudo('/commandbook:home'))
+<<<
+
+*:/sethome = >>>
+if(equals(pworld(), 'server'), sudo('/myhome set'))
+if(equals(pworld(), 'server_nether'), sudo('/myhome set'))
+if(equals(pworld(), 'server_the_end'), sudo('/myhome set'))
+if(equals(pworld(), 'survival'), sudo('/commandbook:sethome'))
+if(equals(pworld(), 'survival_nether'), sudo('/commandbook:sethome'))
+if(equals(pworld(), 'survival_the_end'), sudo('/commandbook:sethome'))
+<<<
 
 regions:/myregions = >>>
     assign(@pname,pinfo()[0])
